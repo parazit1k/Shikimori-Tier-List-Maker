@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shikimori Tier List Maker</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --container-bg: #333333;
+            --text-color: #ffffff;
+            --pool-bg: #2a2a2a;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .controls {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button, input[type="file"]::file-selector-button, select {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        button:hover, input[type="file"]::file-selector-button:hover {
+            background-color: #45a049;
+        }
+
+        button.danger {
+            background-color: #f44336;
+        }
+
+        button.danger:hover {
+            background-color: #d32f2f;
+        }
+
+        select {
+            background-color: #444;
+            border: 1px solid #666;
+            outline: none;
+        }
+
+        select:hover {
+            background-color: #555;
+        }
+
+        .tier-list {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 1000px;
+            background-color: #111;
+            border: 2px solid #000;
+        }
+
+        .tier-row {
+            display: flex;
+            min-height: 120px;
+            border-bottom: 2px solid #000;
+        }
+        .tier-row:last-child {
+            border-bottom: none;
+        }
+
+        .tier-label {
+            width: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            border-right: 2px solid #000;
+            flex-shrink: 0;
+        }
+
+        .tier-s { background-color: #ff7f7f; }
+        .tier-a { background-color: #ffbf7f; }
+        .tier-b { background-color: #ffff7f; }
+        .tier-c { background-color: #ffffbf; }
+        .tier-d { background-color: #bfff7f; }
+
+        .dropzone {
+            flex-grow: 1;
+            background-color: var(--container-bg);
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            padding: 10px;
+            gap: 8px;
+            min-height: 120px;
+        }
+
+        .pool-container {
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 30px;
+        }
+
+        .pool-container h3 {
+            margin-top: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #pool {
+            background-color: var(--pool-bg);
+            border: 2px dashed #666;
+            min-height: 150px;
+        }
+
+        .anime-item {
+            background-color: #444; 
+            border: 1px solid #222;
+            border-radius: 4px;
+            cursor: grab;
+            user-select: none;
+            width: 75px;
+            height: 110px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            text-align: center;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.1s ease;
+            position: relative;
+        }
+
+        .anime-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none; 
+        }
+
+        .anime-item:active {
+            cursor: grabbing;
+        }
+
+        .anime-item.dragging {
+            opacity: 0.5;
+            box-shadow: 0 8px 12px rgba(0,0,0,0.5);
+            transform: scale(1.05);
+        }
+
+        .loader-text {
+            width: 100%;
+            text-align: center;
+            font-size: 16px;
+            color: #aaa;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <input type="file" id="fileInput" accept=".json">
+        <button id="exportBtn">Выгрузить JSON</button>
+        <button id="resetBtn" class="danger">Очистить тир-лист</button>
+        
+        <label for="genreFilter" style="margin-left: 10px;">Сортировка:</label>
+        <select id="genreFilter">
+            <option value="all">Все жанры</option>
+            <option value="гарем">Гарем</option>
+        </select>
+    </div>
+
+    <div class="tier-list">
+        <div class="tier-row">
+            <div class="tier-label tier-s">S</div>
+            <div class="dropzone" data-tier="S"></div>
+        </div>
+        <div class="tier-row">
+            <div class="tier-label tier-a">A</div>
+            <div class="dropzone" data-tier="A"></div>
+        </div>
+        <div class="tier-row">
+            <div class="tier-label tier-b">B</div>
+            <div class="dropzone" data-tier="B"></div>
+        </div>
+        <div class="tier-row">
+            <div class="tier-label tier-c">C</div>
+            <div class="dropzone" data-tier="C"></div>
+        </div>
+        <div class="tier-row">
+            <div class="tier-label tier-d">D</div>
+            <div class="dropzone" data-tier="D"></div>
+        </div>
+    </div>
+
+    <div class="pool-container">
+        <h3>Неоценённые</h3>
+        <div id="pool" class="dropzone" data-tier="POOL"></div>
+    </div>
+
+    <script>
+        let globalAnimeData = [];
+
+        const scoreMapping = {
+            'S': 10,
+            'A': 9,
+            'B': 8,
+            'C': 7,
+            'D': 6
+        };
+
+        // Загрузка JSON файла
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    globalAnimeData = JSON.parse(event.target.result);
+                    renderPool();
+                } catch (error) {
+                    alert("Ошибка при чтении JSON файла!");
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        async function fetchGenresForAnimes(animes) {
+            const ids = animes.map(a => a.target_id);
+            const genresMap = {};
+            const allGenres = new Set();
+
+            for (let i = 0; i < ids.length; i += 50) {
+                const chunk = ids.slice(i, i + 50);
+                const query = `
+                    query {
+                        animes(ids: "${chunk.join(',')}", limit: 50) {
+                            id
+                            genres { russian }
+                        }
+                    }
+                `;
+                try {
+                    const response = await fetch('https://shikimori.one/api/graphql', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ query })
+                    });
+                    const result = await response.json();
+                    
+                    if (result.data && result.data.animes) {
+                        result.data.animes.forEach(anime => {
+                            const rGenres = anime.genres.map(g => g.russian ? g.russian.toLowerCase() : '');
+                            genresMap[anime.id] = rGenres;
+                            rGenres.forEach(g => { if(g) allGenres.add(g); });
+                        });
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                } catch (err) {
+                    console.error("Ошибка при получении жанров:", err);
+                }
+            }
+            return { genresMap, allGenres };
+        }
+
+        async function renderPool() {
+            const pool = document.getElementById('pool');
+            pool.innerHTML = '<div class="loader-text">Связываемся с Shikimori, загружаем обложки и жанры...</div>'; 
+            
+            document.querySelectorAll('.tier-list .dropzone').forEach(dz => dz.innerHTML = '');
+
+            const completedAnimes = globalAnimeData.filter(a => a.status === 'completed');
+
+            const { genresMap, allGenres } = await fetchGenresForAnimes(completedAnimes);
+
+            const genreFilter = document.getElementById('genreFilter');
+            genreFilter.innerHTML = '<option value="all">Все жанры</option><option value="гарем">Гарем</option>';
+            
+            Array.from(allGenres).sort().forEach(g => {
+                if (g !== 'гарем') {
+                    const opt = document.createElement('option');
+                    opt.value = g;
+                    opt.textContent = g.charAt(0).toUpperCase() + g.slice(1);
+                    genreFilter.appendChild(opt);
+                }
+            });
+
+            pool.innerHTML = ''; 
+
+            completedAnimes.forEach(anime => {
+                const el = document.createElement('div');
+                el.className = 'anime-item';
+                el.draggable = true;
+                el.id = `anime-${anime.target_id}`;
+                el.dataset.id = anime.target_id;
+                
+                const animeGenres = genresMap[anime.target_id] || [];
+                el.dataset.genres = animeGenres.join(',');
+                
+                const title = anime.target_title_ru || anime.target_title;
+                el.title = title;
+                
+                const img = document.createElement('img');
+                const imgBaseUrl = `https://shikimori.one/system/animes/original/${anime.target_id}`;
+                img.src = `${imgBaseUrl}.jpg`;
+                img.alt = title;
+
+                img.onerror = function() {
+                    if (this.src.includes('.jpg')) {
+                        this.src = `${imgBaseUrl}.jpeg`;
+                    } else {
+                        this.remove();
+                        el.style.padding = "5px";
+                        el.textContent = title;
+                    }
+                };
+
+                el.appendChild(img);
+                
+                el.addEventListener('dragstart', handleDragStart);
+                el.addEventListener('dragend', handleDragEnd);
+                
+                pool.appendChild(el);
+            });
+        }
+
+        // --- Фильтрация по жанрам ---
+        document.getElementById('genreFilter').addEventListener('change', (e) => {
+            const selectedGenre = e.target.value;
+            document.querySelectorAll('.anime-item').forEach(item => {
+                if (selectedGenre === 'all') {
+                    item.style.display = 'flex';
+                } else {
+                    const genres = item.dataset.genres || '';
+                    if (genres.includes(selectedGenre)) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                }
+            });
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            const pool = document.getElementById('pool');
+            document.querySelectorAll('.tier-list .anime-item').forEach(item => {
+                pool.appendChild(item);
+            });
+        });
+
+        function handleDragStart(e) {
+            e.dataTransfer.setData('text/plain', e.target.id);
+            setTimeout(() => e.target.classList.add('dragging'), 0);
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        function getDragAfterElement(container, x, y) {
+            const draggableElements = [...container.querySelectorAll('.anime-item:not(.dragging)')];
+            for (const child of draggableElements) {
+                const box = child.getBoundingClientRect();
+                if (y >= box.top && y <= box.bottom) {
+                    if (x < box.left + box.width / 2) {
+                        return child;
+                    }
+                } else if (y < box.top) {
+                    return child;
+                }
+            }
+            return null;
+        }
+
+        document.querySelectorAll('.dropzone').forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault(); 
+                
+                const draggingItem = document.querySelector('.dragging');
+                if (!draggingItem) return;
+
+                const afterElement = getDragAfterElement(zone, e.clientX, e.clientY);
+                if (afterElement == null) {
+                    zone.appendChild(draggingItem);
+                } else {
+                    zone.insertBefore(draggingItem, afterElement);
+                }
+            });
+            zone.addEventListener('drop', (e) => e.preventDefault());
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            if (globalAnimeData.length === 0) {
+                alert("Сначала загрузите JSON файл!");
+                return;
+            }
+
+            const updatedData = JSON.parse(JSON.stringify(globalAnimeData));
+
+            Object.keys(scoreMapping).forEach(tier => {
+                const zone = document.querySelector(`.dropzone[data-tier="${tier}"]`);
+                const items = zone.querySelectorAll('.anime-item');
+                
+                items.forEach(item => {
+                    const targetId = parseInt(item.dataset.id, 10);
+                    const animeRecord = updatedData.find(a => a.target_id === targetId);
+                    if (animeRecord) {
+                        animeRecord.score = scoreMapping[tier];
+                    }
+                });
+            });
+
+            const dataStr = JSON.stringify(updatedData, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'updated_tierlist.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>
